@@ -1,0 +1,26 @@
+/* Tailwind base styles */
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  body {
+    @apply bg-splunk-dark text-gray-200 antialiased selection:bg-splunk-green selection:text-black;
+    overflow-x: hidden;
+  }
+}
+
+/* Hide scrollbar for clean UI but keep functionality */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  @apply bg-gray-700/50 rounded-full;
+}
+::-webkit-scrollbar-thumb:hover {
+  @apply bg-gray-600/50;
+}
