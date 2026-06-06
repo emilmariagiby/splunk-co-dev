@@ -1,0 +1,119 @@
+import React, { useRef, useEffect } from "react";
+
+function AgentMode({ events, isStreaming }) {
+  const scrollRef = useRef(null);
+
+  useEffect(() => {
+    if (scrollRef.current) {
+      scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
+    }
+  }, [events]);
+
+  if (!events || events.length === 0) {
+    return (
+      <div className="flex flex-col items-center justify-center h-full text-center p-8">
+        <svg className="w-16 h-16 text-gray-700 mb-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1" d="M13 10V3L4 14h7v7l9-11h-7z" />
+        </svg>
+        <h2 className="text-2xl font-light text-white mb-3">Bulk Automation Agent</h2>
+        <p className="text-gray-400 text-sm max-w-md">
+          Paste a CSV or a list of SPL queries below. The AI Agent will automatically parse them, invent alert names and cron schedules, and natively deploy them to your Splunk instance in bulk.
+        </p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="h-full flex flex-col">
+      <div className="p-6 border-b border-[#333] flex justify-between items-center bg-[#111]">
+        <h2 className="text-xl font-bold text-white flex items-center gap-3">
+          <svg className="w-6 h-6 text-splunk-green" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 10V3L4 14h7v7l9-11h-7z" />
+          </svg>
+          Deployment Console
+        </h2>
+        {isStreaming && (
+          <span className="flex items-center gap-2 text-splunk-green text-xs font-semibold uppercase tracking-wide">
+            <svg className="animate-spin w-4 h-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+            </svg>
+            Deploying...
+          </span>
+        )}
+      </div>
+
+      <div ref={scrollRef} className="flex-1 overflow-y-auto p-6 space-y-4 font-mono text-sm">
+        {events.map((evt, idx) => {
+          if (evt.type === 'info') {
+            return (
+              <div key={idx} className="flex gap-3 text-blue-400 items-start">
+                <span>[INFO]</span>
+                <span>{evt.data.message}</span>
+              </div>
+            );
+          }
+          if (evt.type === 'alert_success') {
+            return (
+              <div key={idx} className="bg-[#111] border border-splunk-green/30 rounded-lg p-4 mt-2">
+                <div className="flex items-center gap-2 mb-3">
+                  <svg className="w-5 h-5 text-splunk-green" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" /></svg>
+                  <span className="text-white font-bold text-base">Alert Deployed: {evt.data.name}</span>
+                </div>
+                <div className="grid grid-cols-2 gap-4 text-xs text-gray-400 mb-2">
+                  <div><span className="text-gray-500">Schedule:</span> {evt.data.cron_schedule}</div>
+                  <div><span className="text-gray-500">Description:</span> {evt.data.description}</div>
+                </div>
+                <div className="bg-black p-2 rounded border border-[#333] font-mono text-splunk-green text-xs break-all">
+                  {evt.data.search}
+                </div>
+              </div>
+            );
+          }
+          if (evt.type === 'dash_success') {
+            return (
+              <div key={idx} className="bg-[#111] border border-purple-500/30 rounded-lg p-4 mt-2">
+                <div className="flex items-center gap-2 mb-3">
+                  <svg className="w-5 h-5 text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" /></svg>
+                  <span className="text-white font-bold text-base">Dashboard Deployed: {evt.data.title}</span>
+                </div>
+                <div className="space-y-2">
+                  {evt.data.panels?.map((panel, i) => (
+                    <div key={i} className="bg-black p-2 rounded border border-[#333] text-xs">
+                      <div className="text-gray-400 mb-1"><span className="text-purple-400 font-bold">Panel {i+1}:</span> {panel.title} ({panel.type})</div>
+                      <div className="font-mono text-splunk-green break-all">{panel.query}</div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            );
+          }
+          if (evt.type === 'alert_error' || evt.type === 'dash_error' || evt.type === 'error') {
+            return (
+              <div key={idx} className="flex gap-3 text-red-500 items-start">
+                <span>[ERROR]</span>
+                <span>{evt.data.name ? `Failed "${evt.data.name}": ` : ''}{evt.data.error || evt.data.message}</span>
+              </div>
+            );
+          }
+          if (evt.type === 'done') {
+            return (
+              <div key={idx} className="flex gap-3 text-white font-bold items-start mt-4 border-t border-[#333] pt-4">
+                <span>[DONE]</span>
+                <span>{evt.data.message}</span>
+              </div>
+            );
+          }
+          return (
+            <div key={idx} className="flex gap-3 text-gray-500 items-start">
+              <span>[{evt.type.toUpperCase()}]</span>
+              <span>{JSON.stringify(evt.data)}</span>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+export default AgentMode;

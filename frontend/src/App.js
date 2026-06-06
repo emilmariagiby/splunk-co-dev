@@ -1,12 +1,13 @@
-import { useState, useEffect, useRef, useCallback } from "react";
+import { useState, useEffect, useRef } from "react";
 import QueryMode from "./components/QueryMode";
 import OnboardMode from "./components/OnboardMode";
 import CopilotMode from "./components/CopilotMode";
+import AgentMode from "./components/AgentMode";
 import ErrorBoundary from "./components/ErrorBoundary";
 
 function App() {
   // Global active mode
-  const [activeMode, setActiveMode] = useState("copilot"); // 'query', 'onboard', 'copilot'
+  const [activeMode, setActiveMode] = useState("copilot"); // 'query', 'onboard', 'copilot', 'agent'
   
   // Unified Input
   const [inputValue, setInputValue] = useState("");
@@ -23,6 +24,10 @@ function App() {
   // Copilot streaming state
   const [copilotStreamText, setCopilotStreamText] = useState("");
   const [copilotStreaming, setCopilotStreaming] = useState(false);
+
+  // Agent State
+  const [agentEvents, setAgentEvents] = useState([]);
+  const [agentStreaming, setAgentStreaming] = useState(false);
 
   // Global Session History
   const [session, setSession] = useState(null);
@@ -198,6 +203,50 @@ function App() {
           setCopilotStreaming(false);
         }
       }
+      else if (activeMode === "agent") {
+        setAgentEvents([]);
+        setAgentStreaming(true);
+        setInputValue("");
+
+        try {
+          const res = await fetch("http://localhost:3002/api/agent/deploy", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ rawInput: input }),
+          });
+
+          const reader = res.body.getReader();
+          const decoder = new TextDecoder();
+          let buffer = "";
+          let currentEvent = "";
+
+          while (true) {
+            const { done, value } = await reader.read();
+            if (done) break;
+
+            buffer += decoder.decode(value, { stream: true });
+            const lines = buffer.split("\n");
+            buffer = lines.pop() ?? "";
+
+            for (const line of lines) {
+              const trimmed = line.trim();
+              if (trimmed.startsWith("event:")) {
+                currentEvent = trimmed.slice(6).trim();
+                continue;
+              }
+              if (!trimmed.startsWith("data:")) continue;
+              const payload = trimmed.slice(5).trim();
+              try {
+                const evtData = JSON.parse(payload);
+                setAgentEvents(prev => [...prev, { type: currentEvent, data: evtData }]);
+              } catch { /* ignore malformed lines */ }
+              currentEvent = "";
+            }
+          }
+        } finally {
+          setAgentStreaming(false);
+        }
+      }
     } catch (err) {
       setError(err.message || "An error occurred.");
     } finally {
@@ -227,6 +276,7 @@ function App() {
     query: "Paste your SPL query to debug and optimize...",
     onboard: "Paste a raw log sample to generate configurations...",
     copilot: "Ask anything... e.g. What should I build next?",
+    agent: "Describe your automation task...",
   };
 
   const handleAppMouseMove = (e) => {
@@ -382,9 +432,12 @@ function App() {
                     loading={loading}
                   />
                 )}
+                {activeMode === "agent" && (
+                  <AgentMode events={agentEvents} isStreaming={agentStreaming} />
+                )}
               </ErrorBoundary>
               
-              {!loading && !copilotStreaming && !queryResult && !onboardResult && !copilotResult && !copilotStreamText && (
+              {!loading && !copilotStreaming && !agentStreaming && !queryResult && !onboardResult && !copilotResult && !copilotStreamText && activeMode !== "agent" && (
                 <div className="flex flex-col items-center justify-center h-[50vh] text-center">
                   <h2 className="text-3xl font-light text-white mb-3">Ready when you are.</h2>
                   <p className="text-gray-400 text-sm max-w-md">
@@ -453,6 +506,12 @@ function App() {
                 className={`flex items-center justify-center gap-2 w-48 py-2.5 rounded-full text-xs font-medium transition-all duration-300 ${activeMode === 'onboard' ? 'bg-[#111] text-gray-200 shadow-[0_0_15px_rgba(255,255,255,0.05)] border border-[#333]' : 'bg-transparent text-gray-500 hover:text-gray-300 border border-transparent'}`}
               >
                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg> Onboard Log
+              </button>
+              <button
+                onClick={() => setActiveMode('agent')}
+                className={`flex items-center justify-center gap-2 w-48 py-2.5 rounded-full text-xs font-medium transition-all duration-300 ${activeMode === 'agent' ? 'bg-[#111] text-gray-200 shadow-[0_0_15px_rgba(255,255,255,0.05)] border border-[#333]' : 'bg-transparent text-gray-500 hover:text-gray-300 border border-transparent'}`}
+              >
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg> Bulk Agent
               </button>
             </div>
 
