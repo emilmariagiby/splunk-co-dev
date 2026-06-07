@@ -236,9 +236,10 @@ function App() {
               }
               if (!trimmed.startsWith("data:")) continue;
               const payload = trimmed.slice(5).trim();
+              const eventTypeToSave = currentEvent; // Capture closure value synchronously
               try {
                 const evtData = JSON.parse(payload);
-                setAgentEvents(prev => [...prev, { type: currentEvent, data: evtData }]);
+                setAgentEvents(prev => [...prev, { type: eventTypeToSave, data: evtData }]);
               } catch { /* ignore malformed lines */ }
               currentEvent = "";
             }
