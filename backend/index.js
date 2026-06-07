@@ -7,19 +7,21 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
-const queryRoute = require('./routes/query');
-const onboardRoute = require('./routes/onboard');
-const splunkRoute = require('./routes/splunk');
-const migrateRoute = require('./routes/migrate');
-const copilotRoute = require('./routes/copilot');
-const workspaceRoute = require('./routes/workspace');
+const queryRoutes = require('./routes/query');
+const copilotRoutes = require('./routes/copilot');
+const workspaceRoutes = require('./routes/workspace');
+const migrateRoutes = require('./routes/migrate');
+const splunkRoutes = require('./routes/splunk');
+const onboardRoutes = require('./routes/onboard');
+const agentRoutes = require('./routes/agent');
 
-app.use('/api/query', queryRoute);
-app.use('/api/onboard', onboardRoute);
-app.use('/api/splunk', splunkRoute);
-app.use('/api/migrate', migrateRoute);
-app.use('/api/copilot', copilotRoute);
-app.use('/api/workspace', workspaceRoute);
+app.use('/api/query', queryRoutes);
+app.use('/api/copilot', copilotRoutes);
+app.use('/api/workspace', workspaceRoutes);
+app.use('/api/migrate', migrateRoutes);
+app.use('/api/splunk', splunkRoutes);
+app.use('/api/onboard', onboardRoutes);
+app.use('/api/agent', agentRoutes);
 
 app.get('/', (req, res) => {
     res.json({ status: 'Splunk Dev Companion backend is running' });
