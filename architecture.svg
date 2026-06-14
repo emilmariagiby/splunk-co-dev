@@ -1,0 +1,231 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 960 620" width="100%" height="100%">
+  <!-- Definitions for gradients, markers and shadows -->
+  <defs>
+    <!-- Background Gradient -->
+    <radialGradient id="bgGrad" cx="50%" cy="50%" r="70%">
+      <stop offset="0%" stop-color="#0F0C20" />
+      <stop offset="100%" stop-color="#05040B" />
+    </radialGradient>
+
+    <!-- Component Glow Effects -->
+    <filter id="glowGreen" x="-20%" y="-20%" width="140%" height="140%">
+      <feGaussianBlur stdDeviation="6" result="blur" />
+      <feComposite in="SourceGraphic" in2="blur" operator="over" />
+    </filter>
+    <filter id="glowPurple" x="-20%" y="-20%" width="140%" height="140%">
+      <feGaussianBlur stdDeviation="6" result="blur" />
+      <feComposite in="SourceGraphic" in2="blur" operator="over" />
+    </filter>
+    <filter id="glowOrange" x="-20%" y="-20%" width="140%" height="140%">
+      <feGaussianBlur stdDeviation="6" result="blur" />
+      <feComposite in="SourceGraphic" in2="blur" operator="over" />
+    </filter>
+    <filter id="glowBlue" x="-20%" y="-20%" width="140%" height="140%">
+      <feGaussianBlur stdDeviation="6" result="blur" />
+      <feComposite in="SourceGraphic" in2="blur" operator="over" />
+    </filter>
+
+    <!-- Linear Gradients for Boxes -->
+    <linearGradient id="boxGreen" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#153621" />
+      <stop offset="100%" stop-color="#0A1C11" />
+    </linearGradient>
+    <linearGradient id="boxPurple" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#2D1540" />
+      <stop offset="100%" stop-color="#160824" />
+    </linearGradient>
+    <linearGradient id="boxOrange" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#3A1C0A" />
+      <stop offset="100%" stop-color="#1D0E05" />
+    </linearGradient>
+    <linearGradient id="boxBlue" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#122440" />
+      <stop offset="100%" stop-color="#081124" />
+    </linearGradient>
+
+    <!-- Arrow Markers -->
+    <marker id="arrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M 0 1 L 10 5 L 0 9 z" fill="#8E8B99" />
+    </marker>
+    <marker id="arrowGreen" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M 0 1 L 10 5 L 0 9 z" fill="#65C271" />
+    </marker>
+    <marker id="arrowPurple" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M 0 1 L 10 5 L 0 9 z" fill="#A855F7" />
+    </marker>
+    <marker id="arrowOrange" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M 0 1 L 10 5 L 0 9 z" fill="#FF7900" />
+    </marker>
+  </defs>
+
+  <!-- Background Layer -->
+  <rect width="100%" height="100%" fill="url(#bgGrad)" />
+
+  <!-- Canvas Border -->
+  <rect x="15" y="15" width="930" height="590" rx="15" fill="none" stroke="#221E38" stroke-width="2" />
+
+  <!-- Diagram Title -->
+  <text x="40" y="50" font-family="'Plus Jakarta Sans', 'Inter', sans-serif" font-size="24" font-weight="800" fill="#FFFFFF" letter-spacing="-0.02em">
+    Splunk Co&gt;Dev <tspan fill="#65C271">Architecture Diagram</tspan>
+  </text>
+  <text x="40" y="72" font-family="'Inter', sans-serif" font-size="12" fill="#757185">
+    Closed-Loop Intelligent Developer Environment for Splunk
+  </text>
+
+  <!-- ==================== LAYER 1: FRONTEND ==================== -->
+  <g id="layer-frontend">
+    <rect x="40" y="110" width="230" height="470" rx="12" fill="url(#boxGreen)" stroke="#65C271" stroke-width="1.5" stroke-opacity="0.5" />
+    <rect x="52" y="122" width="24" height="24" rx="6" fill="#153621" stroke="#65C271" stroke-width="1" />
+    <path d="M60 134 L64 130 L60 126 M66 126 L66 134" stroke="#65C271" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" fill="none" />
+    <text x="86" y="138" font-family="'Plus Jakarta Sans', sans-serif" font-size="14" font-weight="700" fill="#65C271">React SPA UI</text>
+
+    <!-- Component 1: Copilot Chat -->
+    <g transform="translate(55, 170)">
+      <rect width="200" height="75" rx="8" fill="#0A140F" stroke="#223328" stroke-width="1" />
+      <text x="15" y="30" font-family="'Plus Jakarta Sans', sans-serif" font-size="12" font-weight="700" fill="#FFFFFF">Copilot Mode</text>
+      <text x="15" y="48" font-family="'Inter', sans-serif" font-size="10" fill="#757185">Real-time SSE Chat UI</text>
+      <text x="15" y="60" font-family="'Inter', sans-serif" font-size="10" fill="#757185">&amp; Log File Analyzer</text>
+    </g>
+
+    <!-- Component 2: SPL Debugger -->
+    <g transform="translate(55, 260)">
+      <rect width="200" height="75" rx="8" fill="#0A140F" stroke="#223328" stroke-width="1" />
+      <text x="15" y="30" font-family="'Plus Jakarta Sans', sans-serif" font-size="12" font-weight="700" fill="#FFFFFF">Query Mode (Debugger)</text>
+      <text x="15" y="48" font-family="'Inter', sans-serif" font-size="10" fill="#757185">Validation, Score Ring &amp;</text>
+      <text x="15" y="60" font-family="'Inter', sans-serif" font-size="10" fill="#757185">Performance Analyzer UI</text>
+    </g>
+
+    <!-- Component 3: Configuration Mapper -->
+    <g transform="translate(55, 350)">
+      <rect width="200" height="75" rx="8" fill="#0A140F" stroke="#223328" stroke-width="1" />
+      <text x="15" y="30" font-family="'Plus Jakarta Sans', sans-serif" font-size="12" font-weight="700" fill="#FFFFFF">CIM compliance Mapper</text>
+      <text x="15" y="48" font-family="'Inter', sans-serif" font-size="10" fill="#757185">Raw Log Schema Analyzer &amp;</text>
+      <text x="15" y="60" font-family="'Inter', sans-serif" font-size="10" fill="#757185">props.conf Output Panel</text>
+    </g>
+
+    <!-- Component 4: Deployment Agents -->
+    <g transform="translate(55, 440)">
+      <rect width="200" height="75" rx="8" fill="#0A140F" stroke="#223328" stroke-width="1" />
+      <text x="15" y="30" font-family="'Plus Jakarta Sans', sans-serif" font-size="12" font-weight="700" fill="#FFFFFF">Agent &amp; Optimizer UI</text>
+      <text x="15" y="48" font-family="'Inter', sans-serif" font-size="10" fill="#757185">Bulk Deployment Console</text>
+      <text x="15" y="60" font-family="'Inter', sans-serif" font-size="10" fill="#757185">&amp; Saved Searches Scan</text>
+    </g>
+  </g>
+
+  <!-- ==================== LAYER 2: BACKEND ==================== -->
+  <g id="layer-backend">
+    <rect x="360" y="110" width="250" height="470" rx="12" fill="url(#boxPurple)" stroke="#A855F7" stroke-width="1.5" stroke-opacity="0.5" />
+    <rect x="372" y="122" width="24" height="24" rx="6" fill="#2D1540" stroke="#A855F7" stroke-width="1" />
+    <path d="M379 130 C 379 126, 389 126, 389 130" stroke="#A855F7" stroke-width="1.5" stroke-linecap="round" fill="none" />
+    <circle cx="384" cy="134" r="2.5" fill="#A855F7" />
+    <text x="406" y="138" font-family="'Plus Jakarta Sans', sans-serif" font-size="14" font-weight="700" fill="#A855F7">Express Node.js API</text>
+
+    <!-- Router 1: copilot.js -->
+    <g transform="translate(375, 170)">
+      <rect width="220" height="58" rx="6" fill="#140824" stroke="#2C164D" stroke-width="1" />
+      <text x="15" y="24" font-family="'Plus Jakarta Sans', sans-serif" font-size="11" font-weight="700" fill="#FFFFFF">copilot.js &amp; workspace.js</text>
+      <text x="15" y="42" font-family="'Inter', sans-serif" font-size="9" fill="#9C95B0">In-Memory Cache &amp; Repo Scanner</text>
+    </g>
+
+    <!-- Router 2: query.js / queryValidator.js -->
+    <g transform="translate(375, 240)">
+      <rect width="220" height="58" rx="6" fill="#140824" stroke="#2C164D" stroke-width="1" />
+      <text x="15" y="24" font-family="'Plus Jakarta Sans', sans-serif" font-size="11" font-weight="700" fill="#FFFFFF">query.js (Static Cost Shield)</text>
+      <text x="15" y="42" font-family="'Inter', sans-serif" font-size="9" fill="#FF4B4B" font-weight="600">Deterministic Typos &amp; Cost Block</text>
+    </g>
+
+    <!-- Router 3: splunk.js -->
+    <g transform="translate(375, 310)">
+      <rect width="220" height="58" rx="6" fill="#140824" stroke="#2C164D" stroke-width="1" />
+      <text x="15" y="24" font-family="'Plus Jakarta Sans', sans-serif" font-size="11" font-weight="700" fill="#FFFFFF">splunk.js (Search Engine)</text>
+      <text x="15" y="42" font-family="'Inter', sans-serif" font-size="9" fill="#9C95B0">Jobs Poller &amp; Efficiency Scoring</text>
+    </g>
+
+    <!-- Router 4: cim.js & migrate.js -->
+    <g transform="translate(375, 380)">
+      <rect width="220" height="58" rx="6" fill="#140824" stroke="#2C164D" stroke-width="1" />
+      <text x="15" y="24" font-family="'Plus Jakarta Sans', sans-serif" font-size="11" font-weight="700" fill="#FFFFFF">cim.js &amp; migrate.js</text>
+      <text x="15" y="42" font-family="'Inter', sans-serif" font-size="9" fill="#9C95B0">SPL2 Converter &amp; File Write System</text>
+    </g>
+
+    <!-- Router 5: agent.js & optimizer.js -->
+    <g transform="translate(375, 450)">
+      <rect width="220" height="58" rx="6" fill="#140824" stroke="#2C164D" stroke-width="1" />
+      <text x="15" y="24" font-family="'Plus Jakarta Sans', sans-serif" font-size="11" font-weight="700" fill="#FFFFFF">agent.js &amp; optimizer.js</text>
+      <text x="15" y="42" font-family="'Inter', sans-serif" font-size="9" fill="#9C95B0">Asset Compiler &amp; Hot-Swapper</text>
+    </g>
+
+    <!-- Shared: splunkHEC.js -->
+    <g transform="translate(375, 520)">
+      <rect width="220" height="42" rx="6" fill="#1D0824" stroke="#FF7900" stroke-width="1.5" stroke-opacity="0.8" />
+      <text x="15" y="25" font-family="'Plus Jakarta Sans', sans-serif" font-size="11" font-weight="700" fill="#FF7900">splunkHEC.js (Self-Telemetry)</text>
+    </g>
+  </g>
+
+  <!-- ==================== LAYER 3: SPLUNK ==================== -->
+  <g id="layer-splunk">
+    <rect x="690" y="110" width="230" height="220" rx="12" fill="url(#boxOrange)" stroke="#FF7900" stroke-width="1.5" stroke-opacity="0.5" />
+    <rect x="702" y="122" width="24" height="24" rx="6" fill="#3A1C0A" stroke="#FF7900" stroke-width="1" />
+    <path d="M708 134 L708 126 L714 129 L708 131" fill="#FF7900" />
+    <text x="736" y="138" font-family="'Plus Jakarta Sans', sans-serif" font-size="14" font-weight="700" fill="#FF7900">Splunk Enterprise</text>
+
+    <!-- REST Endpoint -->
+    <g transform="translate(705, 170)">
+      <rect width="200" height="60" rx="6" fill="#1D0E05" stroke="#4D2A14" stroke-width="1" />
+      <text x="15" y="24" font-family="'Plus Jakarta Sans', sans-serif" font-size="11" font-weight="700" fill="#FFFFFF">REST API (Port 8089)</text>
+      <text x="15" y="42" font-family="'Inter', sans-serif" font-size="9" fill="#A89E96">Jobs Creation, Polling, &amp; XML Views</text>
+    </g>
+
+    <!-- HEC Endpoint -->
+    <g transform="translate(705, 250)">
+      <rect width="200" height="60" rx="6" fill="#1D0E05" stroke="#4D2A14" stroke-width="1" />
+      <text x="15" y="24" font-family="'Plus Jakarta Sans', sans-serif" font-size="11" font-weight="700" fill="#FFFFFF">HEC Collector (Port 8088)</text>
+      <text x="15" y="42" font-family="'Inter', sans-serif" font-size="9" fill="#A89E96">Asynchronous Telemetry Ingestion</text>
+    </g>
+  </g>
+
+  <!-- ==================== LAYER 4: AI CLOUD ==================== -->
+  <g id="layer-ai">
+    <rect x="690" y="360" width="230" height="220" rx="12" fill="url(#boxBlue)" stroke="#3B82F6" stroke-width="1.5" stroke-opacity="0.5" />
+    <rect x="702" y="372" width="24" height="24" rx="6" fill="#122440" stroke="#3B82F6" stroke-width="1" />
+    <circle cx="714" cy="384" r="5" fill="none" stroke="#3B82F6" stroke-width="1.5" />
+    <text x="736" y="388" font-family="'Plus Jakarta Sans', sans-serif" font-size="14" font-weight="700" fill="#3B82F6">AI Cloud (Groq)</text>
+
+    <!-- Model 1 -->
+    <g transform="translate(705, 420)">
+      <rect width="200" height="60" rx="6" fill="#081124" stroke="#162E5C" stroke-width="1" />
+      <text x="15" y="24" font-family="'Plus Jakarta Sans', sans-serif" font-size="11" font-weight="700" fill="#FFFFFF">Llama 3.3 70B Versatile</text>
+      <text x="15" y="42" font-family="'Inter', sans-serif" font-size="9" fill="#8EA0C2">JSON-mode Conversion &amp; CIM</text>
+    </g>
+
+    <!-- Model 2 -->
+    <g transform="translate(705, 500)">
+      <rect width="200" height="60" rx="6" fill="#081124" stroke="#162E5C" stroke-width="1" />
+      <text x="15" y="24" font-family="'Plus Jakarta Sans', sans-serif" font-size="11" font-weight="700" fill="#FFFFFF">Llama 3.1 8B Instant</text>
+      <text x="15" y="42" font-family="'Inter', sans-serif" font-size="9" fill="#8EA0C2">SSE Tokens &amp; Dashboard Scripts</text>
+    </g>
+  </g>
+
+  <!-- ==================== CONNECTING LINES (FLOWS) ==================== -->
+  <!-- Frontend -> Backend API -->
+  <path d="M 270 207 L 360 207" stroke="#8E8B99" stroke-width="1.5" marker-end="url(#arrow)" />
+  <path d="M 270 297 L 360 297" stroke="#8E8B99" stroke-width="1.5" marker-end="url(#arrow)" />
+  <path d="M 270 387 L 360 387" stroke="#8E8B99" stroke-width="1.5" marker-end="url(#arrow)" />
+  <path d="M 270 477 L 360 477" stroke="#8E8B99" stroke-width="1.5" marker-end="url(#arrow)" />
+
+  <!-- Backend API -> Splunk (REST) -->
+  <path d="M 610 339 L 660 339 L 660 200 L 695 200" stroke="#8E8B99" stroke-width="1.2" fill="none" marker-end="url(#arrow)" />
+  <path d="M 610 479 L 670 479 L 670 210 L 695 210" stroke="#8E8B99" stroke-width="1.2" fill="none" marker-end="url(#arrow)" />
+
+  <!-- Backend HEC -> Splunk (HEC Endpoint) -->
+  <path d="M 595 541 L 640 541 L 640 280 L 695 280" stroke="#FF7900" stroke-width="1.5" fill="none" marker-end="url(#arrowOrange)" />
+
+  <!-- Backend API -> Groq AI Cloud -->
+  <path d="M 610 199 L 650 199 L 650 450 L 695 450" stroke="#3B82F6" stroke-width="1.2" fill="none" marker-end="url(#arrow)" />
+  <path d="M 610 409 L 650 409 L 650 460 L 695 460" stroke="#3B82F6" stroke-width="1.2" fill="none" marker-end="url(#arrow)" />
+  <path d="M 610 509 L 655 509 L 655 530 L 695 530" stroke="#3B82F6" stroke-width="1.2" fill="none" marker-end="url(#arrow)" />
+
+  <!-- Direct file writes (cim.js) -> Workspace (Backwards flow line) -->
+  <path d="M 360 410 L 320 410 L 320 387 L 270 387" stroke="#A855F7" stroke-width="1.5" stroke-dasharray="4,4" fill="none" marker-end="url(#arrowPurple)" />
+  <text x="320" y="375" font-family="'Inter', sans-serif" font-size="9" fill="#A855F7" text-anchor="middle">Write props.conf</text>
+</svg>
