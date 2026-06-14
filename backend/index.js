@@ -14,6 +14,8 @@ const migrateRoutes = require('./routes/migrate');
 const splunkRoutes = require('./routes/splunk');
 const onboardRoutes = require('./routes/onboard');
 const agentRoutes = require('./routes/agent');
+const optimizerRoutes = require('./routes/optimizer');
+const cimRoutes = require('./routes/cim');
 
 app.use('/api/query', queryRoutes);
 app.use('/api/copilot', copilotRoutes);
@@ -22,6 +24,8 @@ app.use('/api/migrate', migrateRoutes);
 app.use('/api/splunk', splunkRoutes);
 app.use('/api/onboard', onboardRoutes);
 app.use('/api/agent', agentRoutes);
+app.use('/api/optimizer', optimizerRoutes);
+app.use('/api/cim', cimRoutes);
 
 app.get('/', (req, res) => {
     res.json({ status: 'Splunk Dev Companion backend is running' });

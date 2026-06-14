@@ -113,4 +113,63 @@ router.post('/', async (req, res) => {
     }
 });
 
+// Route to deploy props.conf natively to Splunk
+router.post('/deploy', async (req, res) => {
+    try {
+        const { sourcetype, props_conf } = req.body;
+        if (!sourcetype || !props_conf) {
+            return res.status(400).json({ error: "Missing sourcetype or props_conf" });
+        }
+
+        const splunkHost = process.env.SPLUNK_HOST;
+        const splunkUrl = splunkHost.startsWith('http') ? splunkHost : `https://${splunkHost}:8089`;
+        const splunkAuth = Buffer.from(`${process.env.SPLUNK_USERNAME}:${process.env.SPLUNK_PASSWORD}`).toString('base64');
+        const httpsAgent = new (require('https').Agent)({ rejectUnauthorized: false });
+
+        const headers = {
+            'Authorization': `Basic ${splunkAuth}`,
+            'Content-Type': 'application/x-www-form-urlencoded'
+        };
+
+        const data = new URLSearchParams();
+        data.append('name', sourcetype);
+
+        // Parse the raw INI text into key-value pairs for the Splunk API
+        const lines = props_conf.split('\n');
+        for (const line of lines) {
+            const trimmed = line.trim();
+            if (!trimmed || trimmed.startsWith('[') || trimmed.startsWith('#')) continue;
+            const eqIdx = trimmed.indexOf('=');
+            if (eqIdx > -1) {
+                const key = trimmed.substring(0, eqIdx).trim();
+                const val = trimmed.substring(eqIdx + 1).trim();
+                data.append(key, val);
+            }
+        }
+
+        // Deploy to nobody/search/configs/conf-props
+        const endpoint = `${splunkUrl}/servicesNS/nobody/search/configs/conf-props?output_mode=json`;
+        
+        try {
+            await axios.post(endpoint, data, { headers, httpsAgent });
+        } catch (splunkErr) {
+            if (splunkErr.response && splunkErr.response.status === 409) {
+                // If it already exists, update it by posting to the specific sourcetype endpoint
+                const updateEndpoint = `${splunkUrl}/servicesNS/nobody/search/configs/conf-props/${encodeURIComponent(sourcetype)}?output_mode=json`;
+                data.delete('name'); // Name is in the URL path now
+                await axios.post(updateEndpoint, data, { headers, httpsAgent });
+            } else {
+                throw splunkErr;
+            }
+        }
+
+        logToSplunk('agent_deployed_props_conf', { sourcetype });
+        res.json({ success: true, message: `Successfully injected ${sourcetype} into props.conf natively!` });
+
+    } catch (error) {
+        console.error("Props Deploy Error:", error.message);
+        res.status(500).json({ error: error.response?.data || error.message });
+    }
+});
+
 module.exports = router;

@@ -3,11 +3,13 @@ import QueryMode from "./components/QueryMode";
 import OnboardMode from "./components/OnboardMode";
 import CopilotMode from "./components/CopilotMode";
 import AgentMode from "./components/AgentMode";
+import OptimizerMode from "./components/OptimizerMode";
+import CIMMode from "./components/CIMMode";
 import ErrorBoundary from "./components/ErrorBoundary";
 
 function App() {
   // Global active mode
-  const [activeMode, setActiveMode] = useState("copilot"); // 'query', 'onboard', 'copilot', 'agent'
+  const [activeMode, setActiveMode] = useState("copilot"); // 'query', 'onboard', 'copilot', 'agent', 'optimizer', 'cim'
   
   // Unified Input
   const [inputValue, setInputValue] = useState("");
@@ -20,6 +22,7 @@ function App() {
   const [queryResult, setQueryResult] = useState(null);
   const [onboardResult, setOnboardResult] = useState(null);
   const [copilotResult, setCopilotResult] = useState(null);
+  const [cimResult, setCimResult] = useState(null);
 
   // Copilot streaming state
   const [copilotStreamText, setCopilotStreamText] = useState("");
@@ -248,6 +251,18 @@ function App() {
           setAgentStreaming(false);
         }
       }
+      else if (activeMode === "cim") {
+        const res = await fetch("http://localhost:3002/api/cim", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ logSample: input }),
+        });
+        const data = await res.json();
+        if (data.error) throw new Error(data.error);
+        setCimResult(data);
+      }
+      
+      // Clear input unless it's copilot (which handles its own clear)
     } catch (err) {
       setError(err.message || "An error occurred.");
     } finally {
@@ -278,6 +293,7 @@ function App() {
     onboard: "Paste a raw log sample to generate configurations...",
     copilot: "Ask anything... e.g. What should I build next?",
     agent: "Describe your automation task...",
+    optimizer: "Paste your SPL query to optimize performance...",
   };
 
   const handleAppMouseMove = (e) => {
@@ -436,9 +452,15 @@ function App() {
                 {activeMode === "agent" && (
                   <AgentMode events={agentEvents} isStreaming={agentStreaming} />
                 )}
+                {activeMode === "optimizer" && (
+                  <OptimizerMode />
+                )}
+                {activeMode === "cim" && (
+                  <CIMMode result={cimResult} loading={loading} workspace={workspace} />
+                )}
               </ErrorBoundary>
               
-              {!loading && !copilotStreaming && !agentStreaming && !queryResult && !onboardResult && !copilotResult && !copilotStreamText && activeMode !== "agent" && (
+              {!loading && !copilotStreaming && !agentStreaming && !queryResult && !onboardResult && !copilotResult && !cimResult && !copilotStreamText && activeMode !== "agent" && activeMode !== "optimizer" && (
                 <div className="flex flex-col items-center justify-center h-[50vh] text-center">
                   <h2 className="text-3xl font-light text-white mb-3">Ready when you are.</h2>
                   <p className="text-gray-400 text-sm max-w-md">
@@ -514,6 +536,18 @@ function App() {
               >
                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg> Bulk Agent
               </button>
+              <button
+                onClick={() => setActiveMode('optimizer')}
+                className={`flex items-center justify-center gap-2 w-48 py-2.5 rounded-full text-xs font-medium transition-all duration-300 ${activeMode === 'optimizer' ? 'bg-orange-900/20 text-orange-400 shadow-[0_0_15px_rgba(251,146,60,0.1)] border border-orange-500/30' : 'bg-transparent text-gray-500 hover:text-gray-300 border border-transparent'}`}
+              >
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg> Optimizer
+              </button>
+              <button
+                onClick={() => setActiveMode('cim')}
+                className={`flex items-center justify-center gap-2 w-48 py-2.5 rounded-full text-xs font-medium transition-all duration-300 ${activeMode === 'cim' ? 'bg-blue-900/20 text-blue-400 shadow-[0_0_15px_rgba(59,130,246,0.1)] border border-blue-500/30' : 'bg-transparent text-gray-500 hover:text-gray-300 border border-transparent'}`}
+              >
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"></path></svg> CIM Mapper
+              </button>
             </div>
 
             {/* Quick Samples - Moved Below Modes with Brighter Green Styling */}
@@ -532,6 +566,16 @@ function App() {
                 { label: "Auth failure", query: "2026-06-01 12:04:06 ERROR AuthService - Login failed for user=john.doe ip=192.168.1.105 attempts=3" },
                 { label: "Apache access", query: '192.168.1.1 - frank [10/Oct/2024:13:55:36 -0700] "GET /apache_pb.gif HTTP/1.0" 200 2326' },
                 { label: "DB error", query: "2026-06-01 14:22:11 FATAL PostgreSQL - Connection refused error=ECONNREFUSED" }
+              ].map((sample, i) => (
+                <button key={i} onClick={() => setInputValue(sample.query)} className="text-[11px] bg-[#0a0a0a] hover:bg-splunk-green/10 border border-splunk-green/50 hover:border-splunk-green text-splunk-green font-medium px-3 py-1.5 rounded-full transition-colors shadow-lg">
+                  {sample.label}
+                </button>
+              ))}
+
+              {activeMode === 'cim' && [
+                { label: "Firewall (Palo Alto)", query: "1,2026/06/07 10:15:33,0018C103233,TRAFFIC,drop,1,2026/06/07 10:15:33,192.168.1.5,10.0.0.5,0.0.0.0,0.0.0.0,Rule-Block,vsys1,trust,untrust,ethernet1/1,ethernet1/2,syslog,vsys1,3456,22,3456,22,0x400000,tcp,deny,158,158,158,2,2026/06/07 10:15:33,0,any,0,296245231" },
+                { label: "Authentication (Okta)", query: '{"actor":{"id":"00u1234567","type":"User","alternateId":"john.doe@company.com"},"action":{"objectType":"user.session.start","result":"SUCCESS"},"client":{"ipAddress":"203.0.113.1","userAgent":{"rawUserAgent":"Mozilla/5.0"},"geographicalContext":{"city":"San Francisco","state":"California","country":"United States"}}}' },
+                { label: "Web Proxy (Squid)", query: "1623067200.123   150 192.168.1.100 TCP_MISS/200 4567 GET http://example.com/ - DIRECT/93.184.216.34 text/html" }
               ].map((sample, i) => (
                 <button key={i} onClick={() => setInputValue(sample.query)} className="text-[11px] bg-[#0a0a0a] hover:bg-splunk-green/10 border border-splunk-green/50 hover:border-splunk-green text-splunk-green font-medium px-3 py-1.5 rounded-full transition-colors shadow-lg">
                   {sample.label}

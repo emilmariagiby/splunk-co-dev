@@ -31,6 +31,33 @@ function OnboardMode({ result, setInputValue, loading }) {
         setTimeout(() => setCopied(null), 2000);
     };
 
+    const [deployStatus, setDeployStatus] = useState(null);
+
+    const handleDeploy = async () => {
+        setDeployStatus('deploying');
+        try {
+            const response = await fetch('http://localhost:3002/api/onboard/deploy', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    sourcetype: result.sourcetype,
+                    props_conf: result.props_conf
+                })
+            });
+            
+            if (response.ok) {
+                setDeployStatus('success');
+                setTimeout(() => setDeployStatus(null), 3000);
+            } else {
+                setDeployStatus('error');
+                setTimeout(() => setDeployStatus(null), 3000);
+            }
+        } catch (error) {
+            setDeployStatus('error');
+            setTimeout(() => setDeployStatus(null), 3000);
+        }
+    };
+
     return (
         <div className="space-y-6">
 
@@ -68,12 +95,21 @@ function OnboardMode({ result, setInputValue, loading }) {
                                 <h3 className="text-gray-500 text-xs font-semibold uppercase tracking-wide">
                                     props.conf
                                 </h3>
-                                <button
-                                    onClick={() => handleCopy(result.props_conf, 'props')}
-                                    className="text-xs bg-[#111] hover:bg-[#222] text-gray-300 px-2 py-1 rounded transition-colors border border-[#333]"
-                                >
-                                    {copied === 'props' ? '✓ Copied!' : 'Copy'}
-                                </button>
+                                <div className="flex gap-2">
+                                    <button
+                                        onClick={handleDeploy}
+                                        disabled={deployStatus === 'deploying'}
+                                        className="text-xs bg-splunk-green/20 hover:bg-splunk-green/30 text-splunk-green px-3 py-1 rounded transition-colors border border-splunk-green/50 font-semibold"
+                                    >
+                                        {deployStatus === 'deploying' ? 'Deploying...' : deployStatus === 'success' ? '✓ Injected!' : deployStatus === 'error' ? 'Error' : 'Deploy to Splunk'}
+                                    </button>
+                                    <button
+                                        onClick={() => handleCopy(result.props_conf, 'props')}
+                                        className="text-xs bg-[#111] hover:bg-[#222] text-gray-300 px-2 py-1 rounded transition-colors border border-[#333]"
+                                    >
+                                        {copied === 'props' ? '✓ Copied!' : 'Copy'}
+                                    </button>
+                                </div>
                             </div>
                             <pre className="text-yellow-400/90 text-sm font-mono whitespace-pre-wrap bg-black/40 p-3 rounded-lg flex-1 border border-[#1a1a1a]">
                                 {result.props_conf}
