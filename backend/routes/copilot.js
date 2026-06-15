@@ -195,8 +195,8 @@ Respond in this EXACT JSON format, no markdown, no backticks:
           { role: 'system', content: systemPrompt },
           { role: 'user',   content: userPrompt },
         ],
-        temperature: 0.35,
-        max_tokens: 600,
+        temperature: 0.1,
+        max_tokens: 1200,
         stream: true,
       },
       {
