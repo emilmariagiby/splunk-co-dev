@@ -71,6 +71,20 @@ router.get('/scan', async (req, res) => {
         // Instead of sending all queries to the expensive LLM, we use cheap local regex
         // to filter out the obvious good queries and only send the suspicious ones.
         const suspiciousEntries = entries.filter(entry => {
+            const app = entry.acl?.app || '';
+            // Ignore Splunk internal system and utility apps to avoid rate limits
+            if (app.startsWith('splunk') || 
+                app.startsWith('alert_') || 
+                app.startsWith('introspection_') || 
+                app === 'audit_trail' || 
+                app === 'learned' || 
+                app === 'legacy' || 
+                app === 'appsbrowser' || 
+                app === 'launcher' ||
+                app === 'python_upgrade_readiness_app') {
+                return false;
+            }
+            
             const q = (entry.content?.search || '').toLowerCase();
             return q.includes('index=*') || 
                    q.includes('join') || 
@@ -93,7 +107,7 @@ router.get('/scan', async (req, res) => {
 
             let queryCatalog = '';
             chunk.forEach((entry, idx) => {
-                queryCatalog += `Name: ${entry.name}\nApp: ${entry.acl?.app}\nOwner: ${entry.acl?.owner}\nQuery: ${entry.content?.search}\n---\n`;
+                queryCatalog += `Name: ${entry.name}\nApp: ${entry.acl?.app}\nOwner: ${entry.acl?.owner}\nSharing: ${entry.acl?.sharing}\nQuery: ${entry.content?.search}\n---\n`;
             });
 
             const prompt = `
@@ -120,6 +134,7 @@ Example Output:
       "name": "Bad Network Alert",
       "app": "search",
       "owner": "admin",
+      "sharing": "app",
       "original_query": "index=* action=blocked | join src_ip [ search index=* infected ]",
       "optimized_query": "index=network action=blocked OR infected | stats values(action) by src_ip",
       "reason": "Using index=* is extremely expensive. 'join' is a massive bottleneck in Splunk. Rewritten to use a single pass with stats."
@@ -165,7 +180,10 @@ Return only the JSON array of optimizations.
                 }
             } catch (chunkError) {
                 console.error("Chunk Error:", chunkError.message);
-                // Continue to next chunk if one fails
+                const isRateLimit = chunkError.response && chunkError.response.status === 429;
+                sseWrite(res, 'info', { 
+                    message: `Batch ${Math.floor(i / CHUNK_SIZE) + 1} analysis failed: ${isRateLimit ? 'Rate limited by Groq API. Try again in a minute.' : chunkError.message}` 
+                });
             }
 
             // Sleep for 1.5 seconds between batches to avoid rate limits
@@ -175,7 +193,7 @@ Return only the JSON array of optimizations.
         }
 
         if (totalOptimizationsFound === 0) {
-            sseWrite(res, 'info', { message: 'All 192 queries are perfectly optimized!' });
+            sseWrite(res, 'info', { message: `All ${entries.length} scanned queries are perfectly optimized!` });
         }
 
         sseWrite(res, 'done', { message: 'Scan completed successfully.' });
@@ -191,7 +209,7 @@ Return only the JSON array of optimizations.
 // Route to Hot-Swap an optimized query natively in Splunk
 router.post('/deploy', async (req, res) => {
     try {
-        const { name, app, owner, optimized_query } = req.body;
+        const { name, app, owner, sharing, optimized_query } = req.body;
         
         if (!name || !app || !owner || !optimized_query) {
             return res.status(400).json({ error: "Missing required fields" });
@@ -209,7 +227,9 @@ router.post('/deploy', async (req, res) => {
         const data = new URLSearchParams();
         data.append('search', optimized_query);
 
-        const endpoint = `${splunkUrl}/servicesNS/${encodeURIComponent(owner)}/${encodeURIComponent(app)}/saved/searches/${encodeURIComponent(name)}?output_mode=json`;
+        // Determine correct namespace (shared vs user private namespace)
+        const targetUser = (sharing === 'app' || sharing === 'global') ? 'nobody' : owner;
+        const endpoint = `${splunkUrl}/servicesNS/${encodeURIComponent(targetUser)}/${encodeURIComponent(app)}/saved/searches/${encodeURIComponent(name)}?output_mode=json`;
         
         await axios.post(endpoint, data, { headers, httpsAgent });
         

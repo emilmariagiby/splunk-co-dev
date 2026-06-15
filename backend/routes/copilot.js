@@ -209,8 +209,11 @@ Respond in this EXACT JSON format, no markdown, no backticks:
       }
     );
 
+    let buffer = '';
     groqRes.data.on('data', (chunk) => {
-      const lines = chunk.toString().split('\n');
+      buffer += chunk.toString();
+      const lines = buffer.split('\n');
+      buffer = lines.pop() ?? '';
       for (const line of lines) {
         const trimmed = line.trim();
         if (!trimmed.startsWith('data:')) continue;
@@ -269,7 +272,7 @@ router.post('/analyze', async (req, res) => {
     const groqRes = await axios.post(
       GROQ_URL,
       {
-        model: FAST_MODEL,
+        model: ACCURATE_MODEL,
         messages: [
           { role: 'system', content: 'You are a Splunk data analyst. Analyze search results concisely. Highlight anomalies, patterns, security concerns, and recommended actions.' },
           { role: 'user', content: message },
@@ -288,8 +291,11 @@ router.post('/analyze', async (req, res) => {
       }
     );
 
+    let analyzeBuffer = '';
     groqRes.data.on('data', (chunk) => {
-      const lines = chunk.toString().split('\n');
+      analyzeBuffer += chunk.toString();
+      const lines = analyzeBuffer.split('\n');
+      analyzeBuffer = lines.pop() ?? '';
       for (const line of lines) {
         const trimmed = line.trim();
         if (!trimmed.startsWith('data:')) continue;

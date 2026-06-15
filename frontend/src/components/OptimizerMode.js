@@ -75,6 +75,7 @@ function OptimizerMode() {
           name: opt.name,
           app: opt.app,
           owner: opt.owner,
+          sharing: opt.sharing,
           optimized_query: opt.optimized_query
         })
       });

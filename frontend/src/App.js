@@ -24,6 +24,14 @@ function App() {
   const [copilotResult, setCopilotResult] = useState(null);
   const [cimResult, setCimResult] = useState(null);
 
+  // Lifted QueryMode Persistent States
+  const [splunkResults, setSplunkResults] = useState(null);
+  const [splunkLoading, setSplunkLoading] = useState(false);
+  const [migrateResult, setMigrateResult] = useState(null);
+  const [migrateLoading, setMigrateLoading] = useState(false);
+  const [aiAnalysis, setAiAnalysis] = useState(null);
+  const [analyzeLoading, setAnalyzeLoading] = useState(false);
+
   // Copilot streaming state
   const [copilotStreamText, setCopilotStreamText] = useState("");
   const [copilotStreaming, setCopilotStreaming] = useState(false);
@@ -129,6 +137,9 @@ function App() {
     try {
       if (activeMode === "query") {
         setQueryResult(null);
+        setSplunkResults(null);
+        setAiAnalysis(null);
+        setMigrateResult(null);
         const isOverride = overrideCriticalRef.current;
         overrideCriticalRef.current = false; // reset after consuming
         const res = await fetch("http://localhost:3002/api/query", {
@@ -431,6 +442,18 @@ function App() {
                     result={queryResult} 
                     setInputValue={setInputValue}
                     loading={loading}
+                    splunkResults={splunkResults}
+                    setSplunkResults={setSplunkResults}
+                    splunkLoading={splunkLoading}
+                    setSplunkLoading={setSplunkLoading}
+                    migrateResult={migrateResult}
+                    setMigrateResult={setMigrateResult}
+                    migrateLoading={migrateLoading}
+                    setMigrateLoading={setMigrateLoading}
+                    aiAnalysis={aiAnalysis}
+                    setAiAnalysis={setAiAnalysis}
+                    analyzeLoading={analyzeLoading}
+                    setAnalyzeLoading={setAnalyzeLoading}
                   />
                 )}
                 {activeMode === "onboard" && (

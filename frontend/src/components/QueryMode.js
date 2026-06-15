@@ -245,15 +245,23 @@ function CostShieldPanel({ validation, onOverride, overrideLoading }) {
 }
 
 // ── Main QueryMode component ─────────────────────────────────────────────────
-function QueryMode({ result, setInputValue, loading }) {
-    const [splunkResults, setSplunkResults] = useState(null);
-    const [splunkLoading, setSplunkLoading] = useState(false);
-
-    const [migrateResult, setMigrateResult] = useState(null);
-    const [migrateLoading, setMigrateLoading] = useState(false);
-
-    const [aiAnalysis, setAiAnalysis] = useState(null);
-    const [analyzeLoading, setAnalyzeLoading] = useState(false);
+function QueryMode({ 
+    result, 
+    setInputValue, 
+    loading,
+    splunkResults,
+    setSplunkResults,
+    splunkLoading,
+    setSplunkLoading,
+    migrateResult,
+    setMigrateResult,
+    migrateLoading,
+    setMigrateLoading,
+    aiAnalysis,
+    setAiAnalysis,
+    analyzeLoading,
+    setAnalyzeLoading
+}) {
 
     // Override state for CRITICAL queries
     const [overrideLoading, setOverrideLoading] = useState(false);

@@ -122,6 +122,22 @@ function AgentMode({ events, isStreaming }) {
               </div>
             );
           }
+          if (evt.type === 'report_success') {
+            return (
+              <div key={idx} className="bg-[#111] border border-blue-500/30 rounded-lg p-4 mt-2">
+                <div className="flex items-center gap-2 mb-3">
+                  <svg className="w-5 h-5 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>
+                  <span className="text-white font-bold text-base">Report Deployed: {evt.data.name}</span>
+                </div>
+                <div className="grid grid-cols-1 gap-2 text-xs text-gray-400 mb-2">
+                  <div><span className="text-gray-500">Description:</span> {evt.data.description}</div>
+                </div>
+                <div className="bg-black p-2 rounded border border-[#333] font-mono text-splunk-green text-xs break-all">
+                  {evt.data.search}
+                </div>
+              </div>
+            );
+          }
           if (evt.type === 'dash_success') {
             return (
               <div key={idx} className="bg-[#111] border border-purple-500/30 rounded-lg p-4 mt-2">
@@ -140,7 +156,7 @@ function AgentMode({ events, isStreaming }) {
               </div>
             );
           }
-          if (evt.type === 'alert_error' || evt.type === 'dash_error' || evt.type === 'error') {
+          if (evt.type === 'alert_error' || evt.type === 'report_error' || evt.type === 'dash_error' || evt.type === 'error') {
             return (
               <div key={idx} className="flex gap-3 text-red-500 items-start">
                 <span>[ERROR]</span>

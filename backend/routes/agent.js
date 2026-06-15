@@ -110,7 +110,7 @@ Generate the JSON payload following the exact schema shown in the Example Output
         const aiResponse = await axios.post(
             GROQ_URL,
             {
-                model: 'llama-3.1-8b-instant',
+                model: ACCURATE_MODEL,
                 messages: [{ role: 'user', content: prompt }],
                 temperature: 0.2
             },
@@ -143,6 +143,21 @@ Generate the JSON payload following the exact schema shown in the Example Output
             'Content-Type': 'application/x-www-form-urlencoded'
         };
 
+        // Fetch installed apps from Splunk to validate the AI-generated target app names
+        let installedApps = ['search'];
+        try {
+            const appsHeaders = {
+                'Authorization': `Basic ${splunkAuth}`,
+                'Content-Type': 'application/json'
+            };
+            const appsRes = await axios.get(`${splunkHost}/services/apps/local?output_mode=json&count=0`, { headers: appsHeaders, httpsAgent });
+            if (appsRes.data && appsRes.data.entry) {
+                installedApps = appsRes.data.entry.map(e => e.name);
+            }
+        } catch (err) {
+            console.warn("[Agent] Failed to fetch installed apps list from Splunk:", err.message);
+        }
+
         // Step 2: Deploy Alerts
         if (parsedData.alerts && parsedData.alerts.length > 0) {
             sseWrite(res, 'info', { message: `Deploying ${parsedData.alerts.length} alerts to Splunk...` });
@@ -158,15 +173,17 @@ Generate the JSON payload following the exact schema shown in the Example Output
                     data.append('alert.severity', '3'); // Medium
                     data.append('alert.track', '1'); // Forces Splunk to classify this as an Alert in the UI
 
-                    const targetApp = alert.app || 'search';
+                    const rawApp = alert.app || 'search';
+                    const targetApp = installedApps.includes(rawApp) ? rawApp : 'search';
                     const targetOwner = alert.owner || splunkUser;
+                    const targetUser = (alert.sharing === 'app' || alert.sharing === 'global') ? 'nobody' : targetOwner;
 
                     try {
-                        await axios.post(`${splunkHost}/servicesNS/${targetOwner}/${targetApp}/saved/searches?output_mode=json`, data, { headers, httpsAgent });
+                        await axios.post(`${splunkHost}/servicesNS/${targetUser}/${targetApp}/saved/searches?output_mode=json`, data, { headers, httpsAgent });
                     } catch (createErr) {
                         if (createErr.response && (createErr.response.status === 409 || extractSplunkError(createErr).includes('overwrite'))) {
                             sseWrite(res, 'info', { message: `Alert '${alert.name}' exists. Overwriting...` });
-                            await axios.post(`${splunkHost}/servicesNS/${targetOwner}/${targetApp}/saved/searches/${encodeURIComponent(alert.name)}?output_mode=json`, data, { headers, httpsAgent });
+                            await axios.post(`${splunkHost}/servicesNS/${targetUser}/${targetApp}/saved/searches/${encodeURIComponent(alert.name)}?output_mode=json`, data, { headers, httpsAgent });
                         } else {
                             throw createErr;
                         }
@@ -176,7 +193,7 @@ Generate the JSON payload following the exact schema shown in the Example Output
                         const aclData = new URLSearchParams();
                         aclData.append('sharing', alert.sharing);
                         aclData.append('owner', targetOwner);
-                        await axios.post(`${splunkHost}/servicesNS/${targetOwner}/${targetApp}/saved/searches/${encodeURIComponent(alert.name)}/acl?output_mode=json`, aclData, { headers, httpsAgent });
+                        await axios.post(`${splunkHost}/servicesNS/${targetUser}/${targetApp}/saved/searches/${encodeURIComponent(alert.name)}/acl?output_mode=json`, aclData, { headers, httpsAgent });
                     }
                     
                     sseWrite(res, 'alert_success', alert);
@@ -198,15 +215,17 @@ Generate the JSON payload following the exact schema shown in the Example Output
                     data.append('search', report.search);
                     data.append('description', report.description || '');
 
-                    const targetApp = report.app || 'search';
+                    const rawApp = report.app || 'search';
+                    const targetApp = installedApps.includes(rawApp) ? rawApp : 'search';
                     const targetOwner = report.owner || splunkUser;
+                    const targetUser = (report.sharing === 'app' || report.sharing === 'global') ? 'nobody' : targetOwner;
 
                     try {
-                        await axios.post(`${splunkHost}/servicesNS/${targetOwner}/${targetApp}/saved/searches?output_mode=json`, data, { headers, httpsAgent });
+                        await axios.post(`${splunkHost}/servicesNS/${targetUser}/${targetApp}/saved/searches?output_mode=json`, data, { headers, httpsAgent });
                     } catch (createErr) {
                         if (createErr.response && (createErr.response.status === 409 || extractSplunkError(createErr).includes('overwrite'))) {
                             sseWrite(res, 'info', { message: `Report '${report.name}' exists. Overwriting...` });
-                            await axios.post(`${splunkHost}/servicesNS/${targetOwner}/${targetApp}/saved/searches/${encodeURIComponent(report.name)}?output_mode=json`, data, { headers, httpsAgent });
+                            await axios.post(`${splunkHost}/servicesNS/${targetUser}/${targetApp}/saved/searches/${encodeURIComponent(report.name)}?output_mode=json`, data, { headers, httpsAgent });
                         } else {
                             throw createErr;
                         }
@@ -216,7 +235,7 @@ Generate the JSON payload following the exact schema shown in the Example Output
                         const aclData = new URLSearchParams();
                         aclData.append('sharing', report.sharing);
                         aclData.append('owner', targetOwner);
-                        await axios.post(`${splunkHost}/servicesNS/${targetOwner}/${targetApp}/saved/searches/${encodeURIComponent(report.name)}/acl?output_mode=json`, aclData, { headers, httpsAgent });
+                        await axios.post(`${splunkHost}/servicesNS/${targetUser}/${targetApp}/saved/searches/${encodeURIComponent(report.name)}/acl?output_mode=json`, aclData, { headers, httpsAgent });
                     }
 
                     sseWrite(res, 'report_success', report);
@@ -246,27 +265,29 @@ Generate the JSON payload following the exact schema shown in the Example Output
                     data.append('name', dashboardId);
                     data.append('eai:data', xml);
 
-                    const targetApp = dash.app || 'search';
+                    const rawApp = dash.app || 'search';
+                    const targetApp = installedApps.includes(rawApp) ? rawApp : 'search';
                     const targetOwner = dash.owner || splunkUser;
+                    const targetUser = (dash.sharing === 'app' || dash.sharing === 'global') ? 'nobody' : targetOwner;
 
+                    let alreadyExists = false;
                     try {
-                        await axios.post(`${splunkHost}/servicesNS/${targetOwner}/${targetApp}/data/ui/views?output_mode=json`, data, { headers, httpsAgent });
+                        await axios.post(`${splunkHost}/servicesNS/${targetUser}/${targetApp}/data/ui/views?output_mode=json`, data, { headers, httpsAgent });
                     } catch (createErr) {
-                        if (createErr.response && (createErr.response.status === 409 || extractSplunkError(createErr).includes('overwrite'))) {
-                            sseWrite(res, 'info', { message: `Dashboard '${dash.title}' exists. Overwriting...` });
-                            const updateData = new URLSearchParams();
-                            updateData.append('eai:data', xml);
-                            await axios.post(`${splunkHost}/servicesNS/${targetOwner}/${targetApp}/data/ui/views/${encodeURIComponent(dashboardId)}?output_mode=json`, updateData, { headers, httpsAgent });
+                        const errMsg = extractSplunkError(createErr);
+                        if (createErr.response && (createErr.response.status === 409 || errMsg.includes('overwrite') || errMsg.includes('already exists'))) {
+                            sseWrite(res, 'info', { message: `Dashboard '${dash.title}' already exists. Skipping overwrite.` });
+                            alreadyExists = true;
                         } else {
                             throw createErr;
                         }
                     }
                     
-                    if (dash.sharing) {
+                    if (dash.sharing && !alreadyExists) {
                         const aclData = new URLSearchParams();
                         aclData.append('sharing', dash.sharing);
                         aclData.append('owner', targetOwner);
-                        await axios.post(`${splunkHost}/servicesNS/${targetOwner}/${targetApp}/data/ui/views/${encodeURIComponent(dashboardId)}/acl?output_mode=json`, aclData, { headers, httpsAgent });
+                        await axios.post(`${splunkHost}/servicesNS/${targetUser}/${targetApp}/data/ui/views/${encodeURIComponent(dashboardId)}/acl?output_mode=json`, aclData, { headers, httpsAgent });
                     }
 
                     sseWrite(res, 'dash_success', dash);
