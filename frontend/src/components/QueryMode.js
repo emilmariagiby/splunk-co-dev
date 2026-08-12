@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { apiFetch } from "../utils/api";
 
 // Sample broken queries for users to try instantly
 const SAMPLE_QUERIES = [
@@ -294,9 +295,8 @@ function QueryMode({
         setError(null);
 
         try {
-            const response = await fetch("http://localhost:3002/api/splunk", {
+            const response = await apiFetch("/api/splunk", {
                 method: "POST",
-                headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({ query: result.fixed }),
             });
 
@@ -317,9 +317,8 @@ function QueryMode({
         setError(null);
 
         try {
-            const response = await fetch("http://localhost:3002/api/migrate", {
+            const response = await apiFetch("/api/migrate", {
                 method: "POST",
-                headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({ query: result.fixed }),
             });
 
@@ -339,9 +338,8 @@ function QueryMode({
         setAiAnalysis({ response: "" });
 
         try {
-            const response = await fetch("http://localhost:3002/api/copilot/analyze", {
+            const response = await apiFetch("/api/copilot/analyze", {
                 method: "POST",
-                headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({
                     message: `Analyze the following live Splunk search results. 
 Context: I originally tried to run this query: \`${result?.original || 'unknown'}\`. The AI Copilot fixed it and added limits to: \`${result?.fixed || 'unknown'}\`.

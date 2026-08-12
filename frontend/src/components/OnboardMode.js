@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { apiFetch } from "../utils/api";
 
 // Sample log entries for users to try instantly
 const SAMPLE_LOGS = [
@@ -36,9 +37,8 @@ function OnboardMode({ result, setInputValue, loading }) {
     const handleDeploy = async () => {
         setDeployStatus('deploying');
         try {
-            const response = await fetch('http://localhost:3002/api/onboard/deploy', {
+            const response = await apiFetch('/api/onboard/deploy', {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                     sourcetype: result.sourcetype,
                     props_conf: result.props_conf

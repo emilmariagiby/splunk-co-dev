@@ -44,13 +44,10 @@ router.get('/scan', async (req, res) => {
     }
 
     try {
-        const splunkHost = process.env.SPLUNK_HOST;
-        // The REST API expects HTTPS
-        const splunkUrl = splunkHost.startsWith('http') ? splunkHost : `https://${splunkHost}:8089`;
-        
-        const splunkAuth = Buffer.from(`${process.env.SPLUNK_USERNAME}:${process.env.SPLUNK_PASSWORD}`).toString('base64');
+        const splunkUrl = req.splunk.url;
+        const splunkAuth = req.splunk.authHeader;
         const headers = {
-            'Authorization': `Basic ${splunkAuth}`,
+            'Authorization': splunkAuth,
             'Content-Type': 'application/x-www-form-urlencoded'
         };
 
@@ -215,12 +212,10 @@ router.post('/deploy', async (req, res) => {
             return res.status(400).json({ error: "Missing required fields" });
         }
 
-        const splunkHost = process.env.SPLUNK_HOST;
-        const splunkUrl = splunkHost.startsWith('http') ? splunkHost : `https://${splunkHost}:8089`;
-        
-        const splunkAuth = Buffer.from(`${process.env.SPLUNK_USERNAME}:${process.env.SPLUNK_PASSWORD}`).toString('base64');
+        const splunkUrl = req.splunk.url;
+        const splunkAuth = req.splunk.authHeader;
         const headers = {
-            'Authorization': `Basic ${splunkAuth}`,
+            'Authorization': splunkAuth,
             'Content-Type': 'application/x-www-form-urlencoded'
         };
 

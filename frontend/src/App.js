@@ -6,6 +6,8 @@ import AgentMode from "./components/AgentMode";
 import OptimizerMode from "./components/OptimizerMode";
 import CIMMode from "./components/CIMMode";
 import ErrorBoundary from "./components/ErrorBoundary";
+import ConnectModal from "./components/ConnectModal";
+import { apiFetch } from "./utils/api";
 
 function App() {
   // Global active mode
@@ -52,15 +54,20 @@ function App() {
   const [workspaceLoading, setWorkspaceLoading] = useState(false);
   const [workspaceError, setWorkspaceError] = useState(null);
 
+  // Connected state
+  const [isConnected, setIsConnected] = useState(!!localStorage.getItem('splunkCreds'));
+
   // Fetch session on load
   useEffect(() => {
-    fetchSession();
-    fetchWorkspace();
-  }, []);
+    if (isConnected) {
+      fetchSession();
+      fetchWorkspace();
+    }
+  }, [isConnected]);
 
   const fetchSession = async () => {
     try {
-      const response = await fetch("http://localhost:3002/api/copilot/session");
+      const response = await apiFetch("/api/copilot/session");
       const data = await response.json();
       setSession(data);
     } catch {
@@ -70,7 +77,7 @@ function App() {
 
   const fetchWorkspace = async () => {
     try {
-      const res = await fetch("http://localhost:3002/api/workspace/context");
+      const res = await apiFetch("/api/workspace/context");
       const data = await res.json();
       if (data.connected) setWorkspace(data.workspace);
       else setWorkspace(null);
@@ -82,9 +89,8 @@ function App() {
     setWorkspaceLoading(true);
     setWorkspaceError(null);
     try {
-      const res = await fetch("http://localhost:3002/api/workspace/scan", {
+      const res = await apiFetch("/api/workspace/scan", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ folderPath: workspacePath.trim() }),
       });
       const data = await res.json();
@@ -100,7 +106,7 @@ function App() {
 
   const handleDisconnectWorkspace = async () => {
     try {
-      await fetch("http://localhost:3002/api/workspace/disconnect", { method: "DELETE" });
+      await apiFetch("/api/workspace/disconnect", { method: "DELETE" });
       setWorkspace(null);
     } catch { }
   };
@@ -142,9 +148,8 @@ function App() {
         setMigrateResult(null);
         const isOverride = overrideCriticalRef.current;
         overrideCriticalRef.current = false; // reset after consuming
-        const res = await fetch("http://localhost:3002/api/query", {
+        const res = await apiFetch("/api/query", {
           method: "POST",
-          headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ query: input, overrideCritical: isOverride }),
         });
         const data = await res.json();
@@ -155,9 +160,8 @@ function App() {
       } 
       else if (activeMode === "onboard") {
         setOnboardResult(null);
-        const res = await fetch("http://localhost:3002/api/onboard", {
+        const res = await apiFetch("/api/onboard", {
           method: "POST",
-          headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ logSample: input }),
         });
         const data = await res.json();
@@ -172,9 +176,8 @@ function App() {
         setInputValue(""); // Clear input immediately for chat feel
 
         try {
-          const res = await fetch("http://localhost:3002/api/copilot/suggest", {
+          const res = await apiFetch("/api/copilot/suggest", {
             method: "POST",
-            headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ question: input }),
           });
 
@@ -223,9 +226,8 @@ function App() {
         setInputValue("");
 
         try {
-          const res = await fetch("http://localhost:3002/api/agent/deploy", {
+          const res = await apiFetch("/api/agent/deploy", {
             method: "POST",
-            headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ rawInput: input }),
           });
 
@@ -263,9 +265,8 @@ function App() {
         }
       }
       else if (activeMode === "cim") {
-        const res = await fetch("http://localhost:3002/api/cim", {
+        const res = await apiFetch("/api/cim", {
           method: "POST",
-          headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ logSample: input }),
         });
         const data = await res.json();
@@ -284,9 +285,8 @@ function App() {
 
   const trackToCopilot = async (type, data) => {
     try {
-      await fetch("http://localhost:3002/api/copilot/track", {
+      await apiFetch("/api/copilot/track", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ type, data }),
       });
     } catch { }
@@ -317,6 +317,7 @@ function App() {
       className="flex h-screen overflow-hidden bg-splunk-dark text-gray-200 relative group"
       onMouseMove={handleAppMouseMove}
     >
+      {!isConnected && <ConnectModal onConnect={() => setIsConnected(true)} />}
       {/* Interactive mouse-following spotlight */}
       <div 
         className="pointer-events-none absolute inset-0 z-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500"

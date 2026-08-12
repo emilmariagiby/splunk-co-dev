@@ -121,13 +121,12 @@ router.post('/deploy', async (req, res) => {
             return res.status(400).json({ error: "Missing sourcetype or props_conf" });
         }
 
-        const splunkHost = process.env.SPLUNK_HOST;
-        const splunkUrl = splunkHost.startsWith('http') ? splunkHost : `https://${splunkHost}:8089`;
-        const splunkAuth = Buffer.from(`${process.env.SPLUNK_USERNAME}:${process.env.SPLUNK_PASSWORD}`).toString('base64');
+        const splunkUrl = req.splunk.url;
+        const splunkAuth = req.splunk.authHeader;
         const httpsAgent = new (require('https').Agent)({ rejectUnauthorized: false });
 
         const headers = {
-            'Authorization': `Basic ${splunkAuth}`,
+            'Authorization': splunkAuth,
             'Content-Type': 'application/x-www-form-urlencoded'
         };
 

@@ -4,8 +4,16 @@ const fs = require('fs');
 const path = require('path');
 const { logToSplunk } = require('../services/splunkHEC');
 
-// Where we persist scanned workspace context
-const WORKSPACE_FILE = path.join(__dirname, '../data/workspace.json');
+const crypto = require('crypto');
+
+const getUserHash = (req) => {
+    if (!req || !req.splunk) return 'default';
+    return crypto.createHash('md5').update(`${req.splunk.url}-${req.splunk.username}`).digest('hex');
+};
+
+const getWorkspaceFile = (req) => {
+    return path.join(__dirname, `../data/workspace_${getUserHash(req)}.json`);
+};
 
 // ── File types and patterns to scan ──────────────────────────────────────────
 
@@ -103,16 +111,21 @@ function extractLogLines(filePath) {
 
 // ── Helpers for reading/writing workspace.json ────────────────────────────────
 
-const readWorkspace = () => {
+const readWorkspace = (req) => {
     try {
-        return JSON.parse(fs.readFileSync(WORKSPACE_FILE, 'utf8'));
+        return JSON.parse(fs.readFileSync(getWorkspaceFile(req), 'utf8'));
     } catch {
         return null;
     }
 };
 
-const writeWorkspace = (data) => {
-    fs.writeFileSync(WORKSPACE_FILE, JSON.stringify(data, null, 2));
+const writeWorkspace = (req, data) => {
+    const file = getWorkspaceFile(req);
+    if (!data) {
+        if (fs.existsSync(file)) fs.unlinkSync(file);
+    } else {
+        fs.writeFileSync(file, JSON.stringify(data, null, 2));
+    }
 };
 
 // ── Routes ────────────────────────────────────────────────────────────────────
@@ -169,13 +182,13 @@ router.post('/scan', (req, res) => {
             files: fileResults,
         };
 
-        writeWorkspace(workspace);
+        writeWorkspace(req, workspace);
 
         // Bust the copilot's in-memory workspace cache so next /suggest
         // call gets fresh data without needing to re-read the file.
         try {
             const { invalidateWorkspaceCache } = require('./copilot');
-            invalidateWorkspaceCache();
+            invalidateWorkspaceCache(req);
         } catch { /* copilot not loaded yet */ }
 
         logToSplunk('workspace_scanned', {
@@ -205,7 +218,7 @@ router.post('/scan', (req, res) => {
 // GET /api/workspace/context
 // Returns the current workspace context (used by Copilot to enrich prompts)
 router.get('/context', (req, res) => {
-    const workspace = readWorkspace();
+    const workspace = readWorkspace(req);
     if (!workspace) {
         return res.json({ connected: false });
     }
@@ -215,10 +228,10 @@ router.get('/context', (req, res) => {
 // DELETE /api/workspace/disconnect
 // Clears the workspace context
 router.delete('/disconnect', (req, res) => {
-    writeWorkspace(null);
+    writeWorkspace(req, null);
     try {
         const { invalidateWorkspaceCache } = require('./copilot');
-        invalidateWorkspaceCache();
+        invalidateWorkspaceCache(req);
     } catch { /* copilot not loaded yet */ }
     res.json({ success: true });
 });

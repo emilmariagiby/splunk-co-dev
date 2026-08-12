@@ -135,11 +135,11 @@ Generate the JSON payload following the exact schema shown in the Example Output
             return res.end();
         }
 
-        const splunkHost = `https://${process.env.SPLUNK_HOST}:${process.env.SPLUNK_PORT}`;
-        const splunkUser = encodeURIComponent(process.env.SPLUNK_USERNAME);
-        const splunkAuth = Buffer.from(`${process.env.SPLUNK_USERNAME}:${process.env.SPLUNK_PASSWORD}`).toString('base64');
+        const splunkHost = req.splunk.url;
+        const splunkUser = encodeURIComponent(req.splunk.username);
+        const splunkAuth = req.splunk.authHeader;
         const headers = {
-            'Authorization': `Basic ${splunkAuth}`,
+            'Authorization': splunkAuth,
             'Content-Type': 'application/x-www-form-urlencoded'
         };
 
@@ -147,7 +147,7 @@ Generate the JSON payload following the exact schema shown in the Example Output
         let installedApps = ['search'];
         try {
             const appsHeaders = {
-                'Authorization': `Basic ${splunkAuth}`,
+                'Authorization': splunkAuth,
                 'Content-Type': 'application/json'
             };
             const appsRes = await axios.get(`${splunkHost}/services/apps/local?output_mode=json&count=0`, { headers: appsHeaders, httpsAgent });

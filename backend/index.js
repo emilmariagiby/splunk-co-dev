@@ -8,6 +8,9 @@ app.use(cors());
 app.use(express.json());
 
 const queryRoutes = require('./routes/query');
+const splunkAuth = require('./middleware/splunkAuth');
+
+app.use('/api', splunkAuth);
 const copilotRoutes = require('./routes/copilot');
 const workspaceRoutes = require('./routes/workspace');
 const migrateRoutes = require('./routes/migrate');

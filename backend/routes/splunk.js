@@ -114,15 +114,14 @@ router.post('/', async (req, res) => {
     try {
         // ── Step 1: Create search job ─────────────────────────────────────────
         const jobResponse = await axios.post(
-            `https://${process.env.SPLUNK_HOST}:${process.env.SPLUNK_PORT}/services/search/jobs`,
+            `${req.splunk.url}/services/search/jobs`,
             `search=${encodeURIComponent('search ' + query)}&output_mode=json`,
             {
                 httpsAgent: agent,
-                auth: {
-                    username: process.env.SPLUNK_USERNAME,
-                    password: process.env.SPLUNK_PASSWORD
-                },
-                headers: { 'Content-Type': 'application/x-www-form-urlencoded' }
+                headers: { 
+                    'Authorization': req.splunk.authHeader,
+                    'Content-Type': 'application/x-www-form-urlencoded' 
+                }
             }
         );
 
@@ -138,13 +137,10 @@ router.post('/', async (req, res) => {
             await new Promise(resolve => setTimeout(resolve, 1000));
 
             const statusResponse = await axios.get(
-                `https://${process.env.SPLUNK_HOST}:${process.env.SPLUNK_PORT}/services/search/jobs/${sid}?output_mode=json`,
+                `${req.splunk.url}/services/search/jobs/${sid}?output_mode=json`,
                 {
                     httpsAgent: agent,
-                    auth: {
-                        username: process.env.SPLUNK_USERNAME,
-                        password: process.env.SPLUNK_PASSWORD
-                    }
+                    headers: { 'Authorization': req.splunk.authHeader }
                 }
             );
 
@@ -158,10 +154,10 @@ router.post('/', async (req, res) => {
             console.log('[Splunk] Job timed out, cancelling:', sid);
             try {
                 await axios.delete(
-                    `https://${process.env.SPLUNK_HOST}:${process.env.SPLUNK_PORT}/services/search/jobs/${sid}`,
+                    `${req.splunk.url}/services/search/jobs/${sid}`,
                     {
                         httpsAgent: agent,
-                        auth: { username: process.env.SPLUNK_USERNAME, password: process.env.SPLUNK_PASSWORD }
+                        headers: { 'Authorization': req.splunk.authHeader }
                     }
                 );
             } catch (e) {
@@ -172,13 +168,10 @@ router.post('/', async (req, res) => {
 
         // ── Step 3: Fetch results ─────────────────────────────────────────────
         const resultsResponse = await axios.get(
-            `https://${process.env.SPLUNK_HOST}:${process.env.SPLUNK_PORT}/services/search/jobs/${sid}/results?output_mode=json&count=20`,
+            `${req.splunk.url}/services/search/jobs/${sid}/results?output_mode=json&count=20`,
             {
                 httpsAgent: agent,
-                auth: {
-                    username: process.env.SPLUNK_USERNAME,
-                    password: process.env.SPLUNK_PASSWORD
-                }
+                headers: { 'Authorization': req.splunk.authHeader }
             }
         );
 

@@ -1,4 +1,5 @@
 import React, { useState, useRef, useEffect } from "react";
+import { apiFetch } from "../utils/api";
 
 function OptimizerMode() {
   const [events, setEvents] = useState([]);
@@ -20,7 +21,7 @@ function OptimizerMode() {
     setDeployStatuses({});
 
     try {
-      const response = await fetch("http://localhost:3002/api/optimizer/scan");
+      const response = await apiFetch("/api/optimizer/scan");
       if (!response.body) throw new Error("ReadableStream not supported");
       
       const reader = response.body.getReader();
@@ -68,9 +69,8 @@ function OptimizerMode() {
   const handleDeploy = async (opt, idx) => {
     setDeployStatuses(prev => ({ ...prev, [idx]: 'deploying' }));
     try {
-      const res = await fetch("http://localhost:3002/api/optimizer/deploy", {
+      const res = await apiFetch("/api/optimizer/deploy", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           name: opt.name,
           app: opt.app,

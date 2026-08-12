@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import { apiFetch } from "../utils/api";
 
 function CIMMode({ result, loading, workspace }) {
     const [copied, setCopied] = useState(false);
@@ -17,9 +18,8 @@ function CIMMode({ result, loading, workspace }) {
         setWriteLoading(true);
         setWriteStatus(null);
         try {
-            const res = await fetch("http://localhost:3002/api/cim/write-conf", {
+            const res = await apiFetch("/api/cim/write-conf", {
                 method: "POST",
-                headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({
                     props_conf_aliases: result.props_conf_aliases,
                     sourcetype: sourcetype.trim()

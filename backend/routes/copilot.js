@@ -7,7 +7,16 @@ require('dotenv').config();
 
 // ── Constants ─────────────────────────────────────────────────────────────────
 
-const SESSION_FILE   = path.join(__dirname, '../data/session.json');
+const crypto = require('crypto');
+
+const getUserHash = (req) => {
+    if (!req || !req.splunk) return 'default';
+    return crypto.createHash('md5').update(`${req.splunk.url}-${req.splunk.username}`).digest('hex');
+};
+
+const getSessionFile = (req) => {
+    return path.join(__dirname, `../data/session_${getUserHash(req)}.json`);
+};
 const GROQ_URL       = 'https://api.groq.com/openai/v1/chat/completions';
 
 // llama-3.1-8b-instant: ~10x faster than 70B (300ms vs 3s), perfect for copilot
@@ -18,45 +27,48 @@ const ACCURATE_MODEL = 'llama-3.3-70b-versatile';
 // ── In-memory caches ──────────────────────────────────────────────────────────
 
 // Workspace context is cached in memory after first read.
-// Gets invalidated when workspace route calls invalidateWorkspaceCache().
-let _workspaceCache = undefined; // undefined = not yet loaded; null = loaded, nothing there
+const _workspaceCache = new Map();
 
 // Session cache: avoid file read on every /track and /suggest
-let _sessionCache = null;
-let _sessionDirty = false;
+const _sessionCache = new Map();
 
 // ── Session helpers ───────────────────────────────────────────────────────────
 
-const readSession = () => {
-  if (_sessionCache) return _sessionCache;
+const readSession = (req) => {
+  const hash = getUserHash(req);
+  if (_sessionCache.has(hash)) return _sessionCache.get(hash);
   try {
-    _sessionCache = JSON.parse(fs.readFileSync(SESSION_FILE, 'utf8'));
+    const data = JSON.parse(fs.readFileSync(getSessionFile(req), 'utf8'));
+    _sessionCache.set(hash, data);
+    return data;
   } catch {
-    _sessionCache = {};
+    _sessionCache.set(hash, {});
+    return {};
   }
-  return _sessionCache;
 };
 
-const writeSession = (data) => {
-  _sessionCache = data;
+const writeSession = (req, data) => {
+  const hash = getUserHash(req);
+  _sessionCache.set(hash, data);
   // Use sync write to prevent race conditions on heavy API usage
   try {
-    fs.writeFileSync(SESSION_FILE, JSON.stringify(data, null, 2));
+    fs.writeFileSync(getSessionFile(req), JSON.stringify(data, null, 2));
   } catch { /* ignore */ }
 };
 
 // ── Workspace context helper ──────────────────────────────────────────────────
 
-function getWorkspaceContext() {
+function getWorkspaceContext(req) {
+  const hash = getUserHash(req);
   // Use cache if available
-  if (_workspaceCache !== undefined) return _workspaceCache;
+  if (_workspaceCache.has(hash)) return _workspaceCache.get(hash);
 
   try {
     const { readWorkspace } = require('./workspace');
-    const workspace = readWorkspace();
+    const workspace = readWorkspace(req);
 
     if (!workspace || !workspace.files?.length) {
-      _workspaceCache = null;
+      _workspaceCache.set(hash, null);
       return null;
     }
 
@@ -73,31 +85,31 @@ function getWorkspaceContext() {
       .filter(Boolean)
       .join('\n');
 
-    _workspaceCache = {
+    _workspaceCache.set(hash, {
       folderName: workspace.folderName,
       totalFiles: workspace.totalFiles,
       totalLogLines: workspace.totalLogLines,
       snippets,
-    };
+    });
   } catch {
-    _workspaceCache = null;
+    _workspaceCache.set(hash, null);
   }
 
-  return _workspaceCache;
+  return _workspaceCache.get(hash);
 }
 
 // Called by workspace.js when a new scan completes
-function invalidateWorkspaceCache() {
-  _workspaceCache = undefined;
+function invalidateWorkspaceCache(req) {
+  _workspaceCache.delete(getUserHash(req));
 }
 
 // ── Build compact context string ──────────────────────────────────────────────
 // Kept short intentionally — fewer tokens = faster response
 
-function buildContext(session) {
+function buildContext(req, session) {
   const q = session.queries?.slice(-5) ?? [];
   const l = session.logs?.slice(-5) ?? [];
-  const ws = getWorkspaceContext();
+  const ws = getWorkspaceContext(req);
 
   const parts = [];
 
@@ -132,13 +144,13 @@ function sseWrite(res, event, data) {
 
 // GET /api/copilot/session
 router.get('/session', (req, res) => {
-  res.json(readSession());
+  res.json(readSession(req));
 });
 
 // POST /api/copilot/track
 router.post('/track', (req, res) => {
   const { type, data } = req.body;
-  const session = readSession();
+  const session = readSession(req);
 
   if (!session.queries)  session.queries  = [];
   if (!session.logs)     session.logs     = [];
@@ -155,7 +167,7 @@ router.post('/track', (req, res) => {
   session.queries  = session.queries.slice(-10);
   session.logs     = session.logs.slice(-10);
 
-  writeSession(session);
+  writeSession(req, session);
   res.json({ success: true });
 });
 
@@ -168,8 +180,8 @@ router.post('/track', (req, res) => {
 //    5. Async file write for session tracking (non-blocking)
 router.post('/suggest', async (req, res) => {
   const { question } = req.body;
-  const session = readSession();
-  const context = buildContext(session);
+  const session = readSession(req);
+  const context = buildContext(req, session);
 
   // Set up SSE so client gets tokens as they arrive
   setupSSE(res);
@@ -331,8 +343,7 @@ router.post('/analyze', async (req, res) => {
 
 // DELETE /api/copilot/reset
 router.delete('/reset', (req, res) => {
-  _sessionCache = {};
-  writeSession({});
+  writeSession(req, {});
   res.json({ success: true });
 });
 
