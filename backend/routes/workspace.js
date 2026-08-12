@@ -55,41 +55,14 @@ function isLogLine(line) {
     return LOG_PATTERNS.some(p => p.test(line));
 }
 
-/**
- * Recursively walks a directory and returns all matching file paths.
- * Skips node_modules, .git, and other irrelevant dirs.
- * Limits total files to 500 to prevent memory issues.
- */
-function walkDir(dirPath, results = [], depth = 0) {
-    if (depth > 8 || results.length > 500) return results;
-
-    let entries;
-    try {
-        entries = fs.readdirSync(dirPath, { withFileTypes: true });
-    } catch {
-        return results;
-    }
-
-    for (const entry of entries) {
-        if (entry.isDirectory()) {
-            if (!shouldSkipDir(entry.name)) {
-                walkDir(path.join(dirPath, entry.name), results, depth + 1);
-            }
-        } else if (entry.isFile() && isAllowedFile(entry.name)) {
-            results.push(path.join(dirPath, entry.name));
-        }
-    }
-
-    return results;
-}
+// Local file walking removed for cloud compatibility
 
 /**
- * Extracts log-relevant lines from a file.
+ * Extracts log-relevant lines from a file's content.
  * Returns max 20 lines per file to keep context concise.
  */
-function extractLogLines(filePath) {
+function extractLogLines(content) {
     try {
-        const content = fs.readFileSync(filePath, 'utf8');
         const lines = content.split('\n');
         const extracted = [];
 
@@ -131,37 +104,28 @@ const writeWorkspace = (req, data) => {
 // ── Routes ────────────────────────────────────────────────────────────────────
 
 // POST /api/workspace/scan
-// Accepts a folder path, scans it, saves context to workspace.json
+// Accepts a JSON payload of files, extracts log patterns, saves context to workspace.json
 router.post('/scan', (req, res) => {
-    let { folderPath } = req.body;
+    let { folderName, files } = req.body;
 
-    if (!folderPath) {
-        return res.status(400).json({ error: 'No folder path provided' });
-    }
-
-    // Windows "Copy as path" includes quotes, strip them
-    folderPath = folderPath.replace(/^["']|["']$/g, '').trim();
-
-    // Validate path exists and is a directory
-    if (!fs.existsSync(folderPath) || !fs.statSync(folderPath).isDirectory()) {
-        return res.status(400).json({ error: `Path not found or not a directory: ${folderPath}` });
+    if (!files || !Array.isArray(files)) {
+        return res.status(400).json({ error: 'No files provided' });
     }
 
     try {
         const startTime = Date.now();
 
-        // Walk the directory
-        const allFiles = walkDir(folderPath);
-
         // Extract log lines from each file
         const fileResults = [];
         let totalLogLines = 0;
 
-        for (const filePath of allFiles) {
-            const logLines = extractLogLines(filePath);
+        for (const fileObj of files) {
+            if (!fileObj.path || !fileObj.content) continue;
+            
+            const logLines = extractLogLines(fileObj.content);
             if (logLines.length > 0) {
                 fileResults.push({
-                    file: path.relative(folderPath, filePath).replace(/\\/g, '/'),
+                    file: fileObj.path,
                     logLines
                 });
                 totalLogLines += logLines.length;
@@ -172,10 +136,10 @@ router.post('/scan', (req, res) => {
 
         // Build the workspace context object
         const workspace = {
-            folderPath,
-            folderName: path.basename(folderPath),
+            folderPath: folderName, // Reused as an identifier
+            folderName: folderName || 'workspace',
             scannedAt: new Date().toISOString(),
-            totalFiles: allFiles.length,
+            totalFiles: files.length,
             filesWithLogs: fileResults.length,
             totalLogLines,
             scanDurationMs: scanDuration,

@@ -50,7 +50,6 @@ function App() {
 
   // Workspace context
   const [workspace, setWorkspace] = useState(null);
-  const [workspacePath, setWorkspacePath] = useState("");
   const [workspaceLoading, setWorkspaceLoading] = useState(false);
   const [workspaceError, setWorkspaceError] = useState(null);
 
@@ -84,23 +83,59 @@ function App() {
     } catch { }
   };
 
-  const handleConnectWorkspace = async () => {
-    if (!workspacePath.trim()) return;
+  const handleConnectWorkspace = async (e) => {
+    const files = e.target.files;
+    if (!files || files.length === 0) return;
+    
     setWorkspaceLoading(true);
     setWorkspaceError(null);
+    
     try {
+      const allowedExtensions = ['.js', '.ts', '.py', '.java', '.go', '.rb', '.php', '.conf', '.json', '.yaml', '.yml', '.env.example', '.sh'];
+      const skipDirs = ['node_modules', '.git', '.next', '__pycache__', 'dist', 'build', 'coverage', '.cache', 'vendor', 'venv', '.venv'];
+      
+      const fileData = [];
+      
+      for (let i = 0; i < files.length; i++) {
+        const file = files[i];
+        const pathParts = file.webkitRelativePath.split('/');
+        
+        // Skip hidden files/folders and ignored directories
+        if (pathParts.some(part => part.startsWith('.') && part !== '.env.example') || 
+            pathParts.some(part => skipDirs.includes(part))) {
+          continue;
+        }
+        
+        // Check extension
+        const hasAllowedExt = allowedExtensions.some(ext => file.name.endsWith(ext));
+        if (!hasAllowedExt) continue;
+        
+        // Read file
+        const text = await file.text();
+        
+        fileData.push({
+          path: file.webkitRelativePath,
+          content: text
+        });
+        
+        // Safety limit to prevent browser crash
+        if (fileData.length > 500) break;
+      }
+      
+      const folderName = files[0].webkitRelativePath.split('/')[0] || 'workspace';
+
       const res = await apiFetch("/api/workspace/scan", {
         method: "POST",
-        body: JSON.stringify({ folderPath: workspacePath.trim() }),
+        body: JSON.stringify({ folderName, files: fileData }),
       });
       const data = await res.json();
       if (data.error) throw new Error(data.error);
       await fetchWorkspace();
-      setWorkspacePath("");
     } catch (err) {
       setWorkspaceError(err.message || "Failed to scan workspace");
     } finally {
       setWorkspaceLoading(false);
+      e.target.value = ''; // reset input
     }
   };
 
@@ -368,28 +403,23 @@ function App() {
             ) : (
               <div className="space-y-2">
                 <input
-                  type="text"
-                  value={workspacePath}
-                  onChange={e => setWorkspacePath(e.target.value)}
-                  onKeyDown={e => e.key === 'Enter' && handleConnectWorkspace()}
-                  placeholder="Paste folder path..."
-                  className="w-full bg-[#0a0a0a] border border-[#1a1a1a] focus:border-splunk-green/50 text-white text-xs px-3 py-2 rounded-lg outline-none transition-colors placeholder-gray-600"
+                  type="file"
+                  webkitdirectory="true"
+                  directory="true"
+                  multiple
+                  onChange={handleConnectWorkspace}
+                  disabled={workspaceLoading}
+                  className="block w-full text-xs text-gray-400 file:mr-2 file:py-1 file:px-2 file:rounded-lg file:border-0 file:text-[10px] file:font-semibold file:bg-splunk-green/20 file:text-splunk-green hover:file:bg-splunk-green/30 disabled:opacity-50 cursor-pointer"
                 />
                 {workspaceError && (
                   <p className="text-red-400 text-[10px] leading-tight">{workspaceError}</p>
                 )}
-                <button
-                  onClick={handleConnectWorkspace}
-                  disabled={workspaceLoading || !workspacePath.trim()}
-                  className="w-full bg-[#0a0a0a] hover:bg-splunk-green/10 border border-[#1a1a1a] hover:border-splunk-green/40 text-gray-400 hover:text-splunk-green text-xs py-2 rounded-lg transition-all disabled:opacity-40 disabled:cursor-not-allowed flex items-center justify-center gap-1.5"
-                >
-                  {workspaceLoading ? (
+                {workspaceLoading && (
+                  <div className="w-full text-splunk-green text-xs py-1 flex items-center justify-center gap-1.5">
                     <svg className="animate-spin h-3 w-3" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none"></circle><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
-                  ) : (
-                    <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z"></path></svg>
-                  )}
-                  {workspaceLoading ? 'Scanning...' : 'Connect Workspace'}
-                </button>
+                    Scanning local files...
+                  </div>
+                )}
               </div>
             )}
           </div>
