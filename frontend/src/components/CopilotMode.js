@@ -1,4 +1,4 @@
-import { useState, useRef } from "react";
+import { useState } from "react";
 
 // ── Typing cursor ─────────────────────────────────────────────────────────────
 function TypingCursor() {

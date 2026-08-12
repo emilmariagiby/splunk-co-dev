@@ -1,30 +1,6 @@
 import { useState } from "react";
 import { apiFetch } from "../utils/api";
 
-// Sample broken queries for users to try instantly
-const SAMPLE_QUERIES = [
-    {
-        label: "Typo in sourcetype",
-        query: "index=main soucetype=access_combined | stats count by status"
-    },
-    {
-        label: "Missing field value",
-        query: "index=_internal | where component= | stats count by component | head 10"
-    },
-    {
-        label: "Multiple typos",
-        query: "index=_interal | serach error | stats cont(host) as host_count by sorucetype | sort -host_coutn | head 20"
-    },
-    {
-        label: "Wrong command",
-        query: "index=main | timechart spna=5m cont by sourcetype"
-    },
-    {
-        label: "⚠️ Expensive query",
-        query: "index=* | stats count"
-    }
-];
-
 // ── Severity config ──────────────────────────────────────────────────────────
 const SEVERITY_CONFIG = {
     SAFE:     { color: 'text-emerald-400', bg: 'bg-emerald-500/10', border: 'border-emerald-500/30', dot: 'bg-emerald-400',  label: 'Safe' },
@@ -268,7 +244,6 @@ function QueryMode({
     const [overrideLoading, setOverrideLoading] = useState(false);
 
     const [error, setError] = useState(null);
-    const [expandedRow, setExpandedRow] = useState(null);
 
     const [copied, setCopied] = useState(null);
     const handleCopy = (text, label) => {
