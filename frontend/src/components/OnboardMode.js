@@ -1,25 +1,7 @@
 import { useState } from "react";
 import { apiFetch } from "../utils/api";
 
-// Sample log entries for users to try instantly
-const SAMPLE_LOGS = [
-  {
-    label: "Auth failure log",
-    log: "2026-06-01 12:04:06 ERROR AuthService - Login failed for user=john.doe ip=192.168.1.105 attempts=3 reason=invalid_password"
-  },
-  {
-    label: "Apache access log",
-    log: '192.168.1.1 - frank [10/Oct/2024:13:55:36 -0700] "GET /apache_pb.gif HTTP/1.0" 200 2326'
-  },
-  {
-    label: "Database error log",
-    log: "2026-06-01 14:22:11 FATAL PostgreSQL - Connection refused host=db01 port=5432 user=admin db=production error=ECONNREFUSED"
-  },
-  {
-    label: "Firewall log",
-    log: "Jun 01 2026 10:15:33 firewall01 DENY TCP src=203.0.113.42 dst=10.0.0.5 sport=54321 dport=22 rule=block-ssh"
-  }
-];
+// Sample log entries for users to try instantly (Removed unused SAMPLE_LOGS)
 
 function OnboardMode({ result, setInputValue, loading }) {
     // Copy text to clipboard and show brief feedback
